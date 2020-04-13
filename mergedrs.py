@@ -24,6 +24,7 @@ run_command = functools.partial(subprocess.run, stdout=subprocess.PIPE, stderr=s
 def get_last_rev_number() -> int:
     res = run_command([SVN, 'info', '--show-item', 'revision', ROOT_URL])
     if res.returncode != 0:
+        print('cannot get last revision.')
         exit(1)
     return int(res.stdout.strip(b'\n'))
 
@@ -50,7 +51,9 @@ def get_inrange_revisions(mergeinfo: Mergeinfo) -> Optional[List[int]]:
         match = re.search(b'^r(\d+) \|', line)
         if match:
             nums.append(int(match.group(1)))
-    return [x for x in nums if mergeinfo.revbegin <= x <= mergeinfo.revend]
+    res = [x for x in nums if mergeinfo.revbegin <= x <= mergeinfo.revend]
+    res.reverse()
+    return res
 
 
 def main():
