@@ -1,7 +1,11 @@
+# you can provide an argument like 1-40 to only extract revisions r1 to r-40, inclusive
+# or default scan all revisions if no argument is provided
+
 import functools
+import pathlib
 import re
 import subprocess
-import pathlib
+import sys
 from typing import List, NamedTuple, Optional
 
 
@@ -9,7 +13,6 @@ SVN = 'svn'
 ROOT_URL = ''
 
 OUTDIR = pathlib.Path('mergedrs.out')
-OUTFILE = OUTDIR / 'merges.txt'
 
 
 class Mergeinfo(NamedTuple):
@@ -27,9 +30,6 @@ def get_last_rev_number() -> int:
         print('cannot get last revision.')
         exit(1)
     return int(res.stdout.strip(b'\n'))
-
-
-LAST_REV_NUMBER = get_last_rev_number()
 
 
 def get_mergeinfo(revision: int) -> Optional[Mergeinfo]:
@@ -56,11 +56,11 @@ def get_inrange_revisions(mergeinfo: Mergeinfo) -> Optional[List[int]]:
     return res
 
 
-def main():
+def scan(since: int, to: int) -> None:
     OUTDIR.mkdir(exist_ok=True)
-    ofile = OUTFILE.open('w')
+    ofile = (OUTDIR / f'merges{since}-{to}.txt').open('w')
 
-    for i in range(1, LAST_REV_NUMBER+1):
+    for i in range(since, to+1):
         print(f'trying {i}...')
         mginfo = get_mergeinfo(i)
         if mginfo is None:
@@ -75,4 +75,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) == 2:
+        arg1 = sys.argv[1].split('-')
+        since = int(arg1[0])
+        to = int(arg1[1])
+    else:
+        since = 1
+        to = get_last_rev_number()
+    scan(since, to)
